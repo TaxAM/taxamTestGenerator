@@ -1,9 +1,13 @@
-import numpy as np
-import random
 import csv
-import os
 import glob 
+import numpy as np
+import os
+import random
 import sys
+from utils.local_parsers import local_parsers
+
+args = local_parsers().__dict__.copy()
+
 def name_taxon(t, level=None):
   prefixs = ["RE", "FI", "CL", "OR", "FA", "GE", "ES"]
   if level is None:
