@@ -83,7 +83,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
           counter[taxon_contig] = counter.get(taxon_contig, 0) + 1
     ordered_taxa = list(counter.keys())
     ordered_taxa.sort()
-    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
+    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".txt", 'w', newline='', encoding='utf-8') as f:
       csv_writer = csv.writer(f, delimiter='\t')
       for t in ordered_taxa:
         q = counter[t]
@@ -147,7 +147,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
 def join_samples(pool_name, sample_names, remove_temporary=True):
   def load_sample(name):
     result = {}
-    file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv"
+    file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".txt"
     with open(file_name, 'r') as f:
       csv_reader = csv.reader(f, delimiter='\t')
       for row in csv_reader:
@@ -165,7 +165,7 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
         tax_names = tax_names.union(counter[sample_name].keys())
       tax_names = list(tax_names)
       tax_names.sort()
-      with open("output_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
+      with open("output_level" + str(level) + "_tie-" + tie_strategy + ".txt", 'w', newline='', encoding='utf-8') as f:
         csv_writer = csv.writer(f, delimiter='\t')
         # I have modified first field to be equal to TaxAM
         row = ['TaxAM']
@@ -222,8 +222,8 @@ if len(sys.argv) != 13:
 # 12. (-mc)Percentage of matched class
 
 # Test
-# python testgenerator.py pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
-# python testgenerator.py -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
+# python testgenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
+# python testgenerator -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
 
 pn = sys.argv[1]
 sn = sys.argv[2].split(",")

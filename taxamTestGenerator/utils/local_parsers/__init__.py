@@ -21,3 +21,5 @@ def local_parsers():
         action = 'store',
         default = None
     )
+
+    return parser
