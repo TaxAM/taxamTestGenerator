@@ -8,6 +8,8 @@ from utils.local_parsers import local_parsers
 
 args = local_parsers().__dict__.copy()
 
+random.seed(0)
+
 def name_taxon(t, level=None):
   prefixs = ["RE", "FI", "CL", "OR", "FA", "GE", "ES"]
   if level is None:
