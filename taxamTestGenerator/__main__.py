@@ -206,7 +206,25 @@ def adjust_classifications(pool_name, pattern):
 if len(sys.argv) != 13:
     print("You must inform 12 parameters.")
     sys.exit(1)
-    
+
+# There are 12 paramters
+# 1. (-n) Pool name
+# 2. (-s) Sample names
+# 3. (-nt) Number of taxa per level
+# 4. (-pt) Percentage of partial taxa
+# 5. (-nr) Number of reads
+# 6. (-nc) Number of contigs
+# 7. (-pm) Percentage of mapped reads
+# 8. (-tr) Number of taxa per read
+# 9. (-tc) Number of taxa per contig
+# 10. (-cr) Percentage of classed reads
+# 11. (-cc) Percentage of classed contigs
+# 12. (-mc)Percentage of matched class
+
+# Test
+# python testgenerator.py pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
+# python testgenerator.py -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
+
 pn = sys.argv[1]
 sn = sys.argv[2].split(",")
 level = [int(x) for x in sys.argv[3].split(",")]
