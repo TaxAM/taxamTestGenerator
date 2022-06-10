@@ -7,6 +7,7 @@ import sys
 from utils.local_parsers import local_parsers
 
 args = local_parsers().__dict__.copy()
+print(args)
 
 random.seed(0)
 
@@ -205,9 +206,9 @@ def adjust_classifications(pool_name, pattern):
                 csv_writer.writerow(["C", row[0], 0, row[1]])
         os.remove(old)
 
-if len(sys.argv) != 13:
-    print("You must inform 12 parameters.")
-    sys.exit(1)
+# if len(sys.argv) != 13:
+#     print("You must inform 12 parameters.")
+#     sys.exit(1)
 
 # There are 12 paramters
 # 1. (-n) Pool name
@@ -224,25 +225,25 @@ if len(sys.argv) != 13:
 # 12. (-mc)Percentage of matched class
 
 # Test
-# python testgenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
-# python testgenerator -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
-
-pn = sys.argv[1]
-sn = sys.argv[2].split(",")
-level = [int(x) for x in sys.argv[3].split(",")]
+# python taxamTestGenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
+# python taxamTestGenerator -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
+pn = args['pool_name']
+sn = args['sample_names'].split(",")
+level = [int(x) for x in args['number_of_taxa_per_level'].split(",")]
 generate_samples(
   pool_name = pn,
-  sample_names=sn, 
-  n_taxa_per_level=level,
-  perc_partial_taxa = float(sys.argv[4]),
-  n_reads = int(sys.argv[5]), 
-  n_contigs = int(sys.argv[6]),
-  perc_mapped_reads = float(sys.argv[7]),
-  n_taxa_reads = int(sys.argv[8]),
-  n_taxa_contigs = int(sys.argv[9]),
-  perc_class_reads = float(sys.argv[10]), 
-  perc_class_contigs = float(sys.argv[11]),
-  perc_matched_class = float(sys.argv[12]))
+  sample_names = sn, 
+  n_taxa_per_level = level,
+  perc_partial_taxa = args['percentage_of_partial_taxa'],
+  n_reads = args['number_of_reads'], 
+  n_contigs = args['number_of_contigs'],
+  perc_mapped_reads = args['percentage_of_mapped_reads'],
+  n_taxa_reads = args['number_of_taxa_per_read'],
+  n_taxa_contigs = args['number_of_taxa_per_contig'],
+  perc_class_reads = args['percentage_of_classified_reads'], 
+  perc_class_contigs = args['percentage_of_classified_contigs'],
+  perc_matched_class = args['percentage_of_matched_class']
+  )
 
 join_samples(pn, sn)
 adjust_classifications(pn, 'reads_*.tsv')
