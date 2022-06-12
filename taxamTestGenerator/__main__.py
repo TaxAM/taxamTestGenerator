@@ -1,13 +1,12 @@
-import csv
-import glob 
 import numpy as np
-import os
 import random
+import csv
+import os
+import glob 
 import sys
 from utils.local_parsers import local_parsers
 
 args = local_parsers().__dict__.copy()
-print(args)
 
 random.seed(0)
 
@@ -86,7 +85,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
           counter[taxon_contig] = counter.get(taxon_contig, 0) + 1
     ordered_taxa = list(counter.keys())
     ordered_taxa.sort()
-    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".txt", 'w', newline='', encoding='utf-8') as f:
+    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
       csv_writer = csv.writer(f, delimiter='\t')
       for t in ordered_taxa:
         q = counter[t]
@@ -150,7 +149,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
 def join_samples(pool_name, sample_names, remove_temporary=True):
   def load_sample(name):
     result = {}
-    file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".txt"
+    file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv"
     with open(file_name, 'r') as f:
       csv_reader = csv.reader(f, delimiter='\t')
       for row in csv_reader:
@@ -168,7 +167,7 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
         tax_names = tax_names.union(counter[sample_name].keys())
       tax_names = list(tax_names)
       tax_names.sort()
-      with open("output_level" + str(level) + "_tie-" + tie_strategy + ".txt", 'w', newline='', encoding='utf-8') as f:
+      with open("output_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
         csv_writer = csv.writer(f, delimiter='\t')
         # I have modified first field to be equal to TaxAM
         row = ['TaxAM']
@@ -210,23 +209,10 @@ def adjust_classifications(pool_name, pattern):
 #     print("You must inform 12 parameters.")
 #     sys.exit(1)
 
-# There are 12 paramters
-# 1. (-n) Pool name
-# 2. (-s) Sample names
-# 3. (-nt) Number of taxa per level
-# 4. (-pt) Percentage of partial taxa
-# 5. (-nr) Number of reads
-# 6. (-nc) Number of contigs
-# 7. (-pm) Percentage of mapped reads
-# 8. (-tr) Number of taxa per read
-# 9. (-tc) Number of taxa per contig
-# 10. (-cr) Percentage of classed reads
-# 11. (-cc) Percentage of classed contigs
-# 12. (-mc)Percentage of matched class
-
 # Test
-# python taxamTestGenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100000 0.85 3000 1000 0.75 0.90 0.65
+# python taxamTestGenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100 0.85 3000 1000 0.75 0.90 0.65
 # python taxamTestGenerator -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
+    
 pn = args['pool_name']
 sn = args['sample_names'].split(",")
 level = [int(x) for x in args['number_of_taxa_per_level'].split(",")]
