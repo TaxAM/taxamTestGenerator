@@ -16,26 +16,73 @@ def name_taxon(t, level=None):
     return ["NA" if t[l] == -1 else prefixs[l] + str(t[l]+1) for l in range(7)]
   return "NA" if t == -1 else prefixs[level] + str(t+1)
 
-def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n_contigs, perc_mapped_reads, n_taxa_reads, n_taxa_contigs, perc_class_reads, perc_class_contigs, perc_matched_class):
-  def valid_perc(name, l = locals()):
-    if 0 <= eval(name, l) <= 1:
+def generate_sample(
+  sample_name,
+  n_taxa_per_level,
+  perc_partial_taxa,
+  n_reads,
+  n_contigs,
+  perc_mapped_reads,
+  n_taxa_reads,
+  n_taxa_contigs,
+  perc_class_reads,
+  perc_class_contigs,
+  perc_matched_class
+):
+  # /////////////////////////////////////////////////////////////////////////////
+  # INNER FUNCTIONS
+  # /////////////////////////////////////////////////////////////////////////////
+
+  # Get the value of "name" in local and check if it is from 0 to 1.
+  def valid_perc(name, locals = locals()):
+    """Check if the value of "name" in local is from 0 to 1.
+
+    Parameters
+    ----------
+    name : str
+        Name of the variable to check.
+    locals : dict, optional
+        Dictionary of local variables, by default locals()
+
+    Returns
+    -------
+    bool
+        True if the value of "name" in local is from 0 to 1.
+    """    
+    if 0 <= eval(name, locals) <= 1:
       return True
     print(name + " should be a real number ranging from 0 to 1")
-  def generate_taxa(n):
+
+  def generate_taxa(number_of_taxa):
+    """Generate a list of taxa.
+
+    Parameters
+    ----------
+    number_of_taxa : int
+        Number of taxa tuples in taxa list
+
+    Returns
+    -------
+    list
+        taxa tuples like [(5, 2, 7, 1, 2, 8, 3), (3, 1, 8, 6, 6, 5, 6), (2, 6, 8, 6, 0, 3, 0)] 
+    """    
     taxa = []
     qtd = 0
     while True:
+      # Tuple with 7 elements like (2, 7, 3, 8, 2, 3, 3)
       taxon = tuple([random.randint(0, n_taxa_per_level[i]-1) for i in range(7)])
       if taxon not in taxa:
         taxa.append(taxon)
         qtd += 1
-        if qtd >= n:
+        if qtd >= number_of_taxa:
           break
+
     changed = []
-    for _ in range(int(perc_partial_taxa * n)):
+    # NA
+    for _ in range(int(perc_partial_taxa * number_of_taxa)):
       target = None
       while True:
-        target = random.randint(0, n-1)
+        target = random.randint(0, number_of_taxa-1)
         if target not in changed:
           break
       t = taxa.pop(target)[:random.randint(1, 5)]
@@ -43,6 +90,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
       taxa.insert(target, t)
       changed.append(target)
     return taxa
+
   def generate_inputs():
     if n_taxa_reads > 0:
       with open("reads_" + sample_name + ".tsv", 'w', newline='', encoding='utf-8') as f:
@@ -51,22 +99,27 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
           row = ['READ' + str(id+1)]
           row.extend(name_taxon(taxon))
           csv_writer.writerow(row)
+
     with open("contigs_" + sample_name + ".tsv", 'w', newline='', encoding='utf-8') as f:
       csv_writer = csv.writer(f, delimiter='\t')
       for id, taxon in contig_classifications.items():
         row = ['CONTIG' + str(id+1)]
         row.extend(name_taxon(taxon))
         csv_writer.writerow(row)
+
     with open("mapping_" + sample_name + ".tsv", 'w', newline='', encoding='utf-8') as f:
       csv_writer = csv.writer(f, delimiter='\t')
       for r, c in mappings.items():
         row = ['READ' + str(r+1), 'CONTIG' + str(c+1)]
         csv_writer.writerow(row)
+
   def generate_outputs():
     for tie_strategy in ["read", "contig", "discard"]:
       for i in range(7):
         generate_output(i, tie_strategy)
+
     generate_inputs()
+
   def generate_output(level, tie_strategy):
     counter = {}
     for read_id in read_ids:
@@ -91,6 +144,10 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
         q = counter[t]
         csv_writer.writerow([t[-1], q])
     
+  # /////////////////////////////////////////////////////////////////////////////
+  # MAIN
+  # /////////////////////////////////////////////////////////////////////////////
+  # continue
 
   if len(n_taxa_per_level) != 7 or sum(list(map(lambda x : 0 if str(x).isdigit() else 1, n_taxa_per_level))) != 0:
     print("n_taxa_per_level should be a list with 7 integer elements")
@@ -123,6 +180,7 @@ def generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n
   contig_ids = list(range(n_contigs))
   mapped_read_ids = random.sample(read_ids, int(perc_mapped_reads * n_reads))
   mappings = {}
+  
   for r in mapped_read_ids:
     mappings[r] = random.sample(contig_ids, 1)[0]
   all_taxa = generate_taxa(max(n_taxa_reads, n_taxa_contigs))
@@ -179,15 +237,45 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
           csv_writer.writerow(row)
   for f in glob.glob("*.tsv"):
     os.rename(f, os.path.join(pool_name, f))
-def generate_samples(pool_name, sample_names, n_taxa_per_level, perc_partial_taxa, n_reads, n_contigs, perc_mapped_reads, n_taxa_reads, n_taxa_contigs, perc_class_reads, perc_class_contigs, perc_matched_class):
+
+def generate_samples(
+  pool_name,
+  sample_names,
+  n_taxa_per_level,
+  perc_partial_taxa,
+  n_reads,
+  n_contigs,
+  perc_mapped_reads,
+  n_taxa_reads,
+  n_taxa_contigs,
+  perc_class_reads,
+  perc_class_contigs,
+  perc_matched_class
+):
+  # Check if a folder for this sample already exists
   if os.path.exists(pool_name):
     print("Output folder already exists.")
     sys.exit(1)
+  
+  # Find all files with "*.tsv"
   if len(list(glob.glob("*.tsv"))):
     print("Current folder already has TSV file(s).")
     sys.exit(1)
+  
   for sample_name in sample_names:
-    generate_sample(sample_name, n_taxa_per_level, perc_partial_taxa, n_reads, n_contigs, perc_mapped_reads, n_taxa_reads, n_taxa_contigs, perc_class_reads, perc_class_contigs, perc_matched_class)
+    generate_sample(
+      sample_name,
+      n_taxa_per_level,
+      perc_partial_taxa,
+      n_reads,
+      n_contigs,
+      perc_mapped_reads,
+      n_taxa_reads,
+      n_taxa_contigs,
+      perc_class_reads,
+      perc_class_contigs,
+      perc_matched_class
+    )
 
 def adjust_classifications(pool_name, pattern):
     for p in glob.glob(os.path.join(pool_name, pattern)):
@@ -212,7 +300,8 @@ def adjust_classifications(pool_name, pattern):
 # Test
 # python taxamTestGenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100 0.85 3000 1000 0.75 0.90 0.65
 # python taxamTestGenerator -n pool_esc_a -s A,B -nt 9,9,9,9,9,9,9 -pt 0 -nr 100 -nc 100 -pm 0.85 -tr 3000 -tc 1000 -cr 0.75 -cc 0.90 -mc 0.65
-    
+
+# Inputs
 pn = args['pool_name']
 sn = args['sample_names'].split(",")
 level = [int(x) for x in args['number_of_taxa_per_level'].split(",")]
