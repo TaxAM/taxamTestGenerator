@@ -114,17 +114,27 @@ def generate_sample(
         csv_writer.writerow(row)
 
   def generate_outputs():
+    """
     for tie_strategy in ["read", "contig", "discard"]:
       for i in range(7):
         generate_output(i, tie_strategy)
+
+    generate_inputs()    
+    """    
+    for tie_strategy in ["read", "contig", "discard"]:
+      for level in range(7):
+        generate_output(level, tie_strategy)
 
     generate_inputs()
 
   def generate_output(level, tie_strategy):
     counter = {}
     for read_id in read_ids:
+      # The second value in get method it what it will return, if the key does
+      # not exists. [-1]*7 means that the taxon is NA.
       taxon_read = read_classifications.get(read_id, [-1]*7)[:level+1]
       taxon_contig = contig_classifications.get(mappings.get(read_id, -1), [-1]*7)[:level+1]
+
       if taxon_contig[-1] < 0 and taxon_read[-1] < 0:
         continue
       if taxon_read[-1] < 0 or taxon_contig == taxon_read:
@@ -136,6 +146,7 @@ def generate_sample(
           counter[taxon_read] = counter.get(taxon_read, 0) + 1
         if tie_strategy == "contig":
           counter[taxon_contig] = counter.get(taxon_contig, 0) + 1
+
     ordered_taxa = list(counter.keys())
     ordered_taxa.sort()
     with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
@@ -143,17 +154,27 @@ def generate_sample(
       for t in ordered_taxa:
         q = counter[t]
         csv_writer.writerow([t[-1], q])
+        
+    # Delete it later
+    # with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'r', newline='', encoding='utf-8') as f:
+    #   print("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv")
+    #   for line in f.readlines():
+    #     print(line)
+    #   print('-'*60)
+    
     
   # /////////////////////////////////////////////////////////////////////////////
   # MAIN
   # /////////////////////////////////////////////////////////////////////////////
-  # continue
 
   if len(n_taxa_per_level) != 7 or sum(list(map(lambda x : 0 if str(x).isdigit() else 1, n_taxa_per_level))) != 0:
     print("n_taxa_per_level should be a list with 7 integer elements")
     return -1
+  
+  # Convert all values to int
   n_taxa_per_level = list(map(lambda x : int(x), n_taxa_per_level))
   max_taxa = np.prod(n_taxa_per_level)
+  
   if not valid_perc("perc_partial_taxa"):
     return -2
   if not valid_perc("perc_mapped_reads"):
@@ -164,6 +185,7 @@ def generate_sample(
     return -5
   if not valid_perc("perc_matched_class"):
     return -6
+  
   if n_taxa_reads > max_taxa:
     print("n_taxa_reads should not exceed the maximum number of taxa")
     return -7
@@ -176,21 +198,30 @@ def generate_sample(
   if n_contigs <= 0:
     print("n_contigs should be a positive integer")
     return -9
+
+  # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ..., nr]
   read_ids = list(range(n_reads))
+  # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ..., nc]
   contig_ids = list(range(n_contigs))
   mapped_read_ids = random.sample(read_ids, int(perc_mapped_reads * n_reads))
   mappings = {}
   
-  for r in mapped_read_ids:
-    mappings[r] = random.sample(contig_ids, 1)[0]
+  for mapped_read_id in mapped_read_ids:
+    mappings[mapped_read_id] = random.sample(contig_ids, 1)[0]
+  # taxa tuples like [(5, 2, 7, 1, 2, 8, 3), (3, 1, 8, 6, 6, 5, 6), (2, 6, 8, 6, 0, 3, 0)]
   all_taxa = generate_taxa(max(n_taxa_reads, n_taxa_contigs))
 
+  # taxa tuples like [(3, 8, 2, 8, 5, 3, 8), (3, 8, 5, 3, 8, 8, 5), (1, 2, 2, 1, 7, 4, 6)]
   taxa_contigs = random.sample(all_taxa, n_taxa_contigs)
   class_contig_ids = random.sample(read_ids, int(perc_class_contigs * n_reads))
+  # Store just a number of contigs specified. For intance, if there are just
+  # 75% of classified contigs from 200 contigs, it'll store just 150 random
+  # contigs
   contig_classifications = {}
   for contig_id in random.sample(contig_ids, int(perc_class_contigs * n_contigs)):
     contig_classifications[contig_id] = random.sample(taxa_contigs, 1)[0]
 
+  # NA
   matching_buffer = []
   taxa_reads = random.sample(all_taxa, n_taxa_reads)
   read_classifications = {}
@@ -210,10 +241,19 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
     file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv"
     with open(file_name, 'r') as f:
       csv_reader = csv.reader(f, delimiter='\t')
+      print(file_name)
       for row in csv_reader:
-        result[int(row[0])] = int(row[1])
+        # print(f'-> {row}')
+        # IT LOOKS LIKE THE BUG IS HERE
+        try:
+          result[int(row[0])] += int(row[1])
+        except:
+          result[int(row[0])] = int(row[1])
+      # print('-'*80)
     if remove_temporary:
         os.remove(file_name)
+    print(result)
+    print('-'*80)
     return result
   os.mkdir(pool_name)
   for level in range(7):
