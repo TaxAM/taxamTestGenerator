@@ -5,3 +5,6 @@
 # LOCAL
 tests
 **/pool_*/
+**/converted_files/
+**/samples/
+output.txt

@@ -12,9 +12,13 @@ random.seed(0)
 
 def name_taxon(t, level=None):
   prefixs = ["RE", "FI", "CL", "OR", "FA", "GE", "ES"]
+  print(t, type(t))
+  t = [int(x) for x in t.split('; ')] if type(t) is str else t
   if level is None:
-    return ["NA" if t[l] == -1 else prefixs[l] + str(t[l]+1) for l in range(7)]
-  return "NA" if t == -1 else prefixs[level] + str(t+1)
+    level = 6
+  return ["NA" if t[l] == -1 else prefixs[l] + str(int(t[l])+1) for l in range(level+1)]
+  # print(prefixs[level], t, level, t[level], type(t), type(level))
+  # return "NA" if t == -1 else prefixs[level] + str(int(t)+1)
 
 def generate_sample(
   sample_name,
@@ -128,7 +132,9 @@ def generate_sample(
     generate_inputs()
 
   def generate_output(level, tie_strategy):
+    LOG = {}
     counter = {}
+    contigs_c, reads_c, discard_c = 0, 0, 0
     for read_id in read_ids:
       # The second value in get method it what it will return, if the key does
       # not exists. [-1]*7 means that the taxon is NA.
@@ -139,21 +145,45 @@ def generate_sample(
         continue
       if taxon_read[-1] < 0 or taxon_contig == taxon_read:
         counter[taxon_contig] = counter.get(taxon_contig, 0) + 1
+        LOG[taxon_contig] = LOG.get(taxon_contig, [])
+        LOG[taxon_contig].append(read_id)
       elif taxon_contig[-1] < 0:
         counter[taxon_read] = counter.get(taxon_read, 0) + 1
+        LOG[taxon_read] = LOG.get(taxon_read, [])
+        LOG[taxon_read].append(read_id)
       else:
+        # IT LOOKS LIKE THE OTHER BUG IS HERE
         if tie_strategy == "read":
           counter[taxon_read] = counter.get(taxon_read, 0) + 1
-        if tie_strategy == "contig":
+          LOG[taxon_read] = LOG.get(taxon_read, [])
+          LOG[taxon_read].append(read_id)
+          # print(f'Read({level}): {taxon_read} -> {counter.get(taxon_read, 0) + 1}')
+          reads_c += 1
+        elif tie_strategy == "contig":
           counter[taxon_contig] = counter.get(taxon_contig, 0) + 1
+          LOG[taxon_contig] = LOG.get(taxon_contig, [])
+          LOG[taxon_contig].append(read_id)
+          # print(f'Contig({level}): {taxon_contig} -> {counter.get(taxon_contig, 0) + 1}')
+          contigs_c += 1
+        else:
+          discard_c += 1
+    # print(f'Level: {level}')
+    # print(f'Reads: {reads_c}')
+    # print(f'Contigs: {contigs_c}')
+    # print(f'No one: {discard_c}')
+    # print(f'{"-"*80}\n\n')
+          
 
     ordered_taxa = list(counter.keys())
     ordered_taxa.sort()
-    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
+    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f, open("log_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f2:
       csv_writer = csv.writer(f, delimiter='\t')
+      csv_writer2 = csv.writer(f2, delimiter='\t')
       for t in ordered_taxa:
         q = counter[t]
-        csv_writer.writerow([t[-1], q])
+        csv_writer.writerow(["; ".join([str(x) for x in t]), q]) # aki
+        csv_writer2.writerow(["; ".join([str(x) for x in t]), ",".join([str(k) for k in LOG[t]])]) # aki
+        #csv_writer.writerow([t[-1], q])
         
     # Delete it later
     # with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'r', newline='', encoding='utf-8') as f:
@@ -213,7 +243,7 @@ def generate_sample(
 
   # taxa tuples like [(3, 8, 2, 8, 5, 3, 8), (3, 8, 5, 3, 8, 8, 5), (1, 2, 2, 1, 7, 4, 6)]
   taxa_contigs = random.sample(all_taxa, n_taxa_contigs)
-  class_contig_ids = random.sample(read_ids, int(perc_class_contigs * n_reads))
+  
   # Store just a number of contigs specified. For intance, if there are just
   # 75% of classified contigs from 200 contigs, it'll store just 150 random
   # contigs
@@ -241,19 +271,20 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
     file_name = "output_" + name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv"
     with open(file_name, 'r') as f:
       csv_reader = csv.reader(f, delimiter='\t')
-      print(file_name)
+      # print(file_name)
       for row in csv_reader:
-        # print(f'-> {row}')
         # IT LOOKS LIKE THE BUG IS HERE
-        try:
-          result[int(row[0])] += int(row[1])
-        except:
-          result[int(row[0])] = int(row[1])
+        result[row[0]] = result.get(row[0], 0) + int(row[1])
+        # try:
+        #   result[int(row[0])] += int(row[1])
+        # except:
+        #   result[int(row[0])] = int(row[1])
       # print('-'*80)
     if remove_temporary:
-        os.remove(file_name)
-    print(result)
-    print('-'*80)
+        # os.remove(file_name)
+        pass
+    # print(result)
+    # print('-'*80)
     return result
   os.mkdir(pool_name)
   for level in range(7):
@@ -272,7 +303,7 @@ def join_samples(pool_name, sample_names, remove_temporary=True):
         row.extend([s for s in sample_names])
         csv_writer.writerow(row)
         for tax_name in tax_names:
-          row = [name_taxon(tax_name, level)]
+          row = ["; ".join(name_taxon(tax_name, level))]
           row.extend([counter[s].get(tax_name, 0) for s in sample_names])
           csv_writer.writerow(row)
   for f in glob.glob("*.tsv"):
