@@ -12,7 +12,6 @@ random.seed(0)
 
 def name_taxon(t, level=None):
   prefixs = ["RE", "FI", "CL", "OR", "FA", "GE", "ES"]
-  print(t, type(t))
   t = [int(x) for x in t.split('; ')] if type(t) is str else t
   if level is None:
     level = 6
@@ -176,13 +175,11 @@ def generate_sample(
 
     ordered_taxa = list(counter.keys())
     ordered_taxa.sort()
-    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f, open("log_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f2:
+    with open("output_" + sample_name + "_level" + str(level) + "_tie-" + tie_strategy + ".tsv", 'w', newline='', encoding='utf-8') as f:
       csv_writer = csv.writer(f, delimiter='\t')
-      csv_writer2 = csv.writer(f2, delimiter='\t')
       for t in ordered_taxa:
         q = counter[t]
         csv_writer.writerow(["; ".join([str(x) for x in t]), q]) # aki
-        csv_writer2.writerow(["; ".join([str(x) for x in t]), ",".join([str(k) for k in LOG[t]])]) # aki
         #csv_writer.writerow([t[-1], q])
         
     # Delete it later
@@ -364,6 +361,20 @@ def adjust_classifications(pool_name, pattern):
                 csv_writer.writerow(["C", row[0], 0, row[1]])
         os.remove(old)
 
+def change_extension(
+  filepath,
+  new_extension
+):
+  name, _ = filepath.split('.')
+  with open(filepath, 'r') as file:
+    content = file.read()
+    
+  with open(f'{name}.{new_extension}', 'w') as file:
+    file.write(content)
+    
+  os.remove(filepath)
+  
+
 # if len(sys.argv) != 13:
 #     print("You must inform 12 parameters.")
 #     sys.exit(1)
@@ -394,3 +405,11 @@ generate_samples(
 join_samples(pn, sn)
 adjust_classifications(pn, 'reads_*.tsv')
 adjust_classifications(pn, 'contigs_*.tsv')
+
+Change samples extension from tsv to txt
+for file in os.listdir(args['pool_name']):
+  _, extension = file.split('.')
+  if extension.lower() == 'tsv':
+    change_extension(
+      f'{args["pool_name"]}/{file}', 'txt'
+    )
