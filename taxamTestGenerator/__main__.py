@@ -406,7 +406,7 @@ join_samples(pn, sn)
 adjust_classifications(pn, 'reads_*.tsv')
 adjust_classifications(pn, 'contigs_*.tsv')
 
-Change samples extension from tsv to txt
+# Change samples extension from tsv to txt
 for file in os.listdir(args['pool_name']):
   _, extension = file.split('.')
   if extension.lower() == 'tsv':
