@@ -362,8 +362,8 @@ def adjust_classifications(pool_name, pattern):
         os.remove(old)
 
 def change_extension(
-  filepath,
-  new_extension
+  filepath: str,
+  new_extension: str
 ):
   name, _ = filepath.split('.')
   with open(filepath, 'r') as file:
@@ -373,11 +373,19 @@ def change_extension(
     file.write(content)
     
   os.remove(filepath)
-  
 
-# if len(sys.argv) != 13:
-#     print("You must inform 12 parameters.")
-#     sys.exit(1)
+def move_files(
+  file_patterns: list[str],
+  source_path: str,
+  new_dir: str
+):
+  for file_pattern in file_patterns:
+    for file in glob.glob('/'.join([source_path, file_pattern])):
+      print(f'File: {file}')
+      os.rename(
+        '/'.join([source_path, os.path.basename(file)]),
+        '/'.join([new_dir, os.path.basename(file)]),
+      )
 
 # Test
 # python taxamTestGenerator pool_esc_a A,B 9,9,9,9,9,9,9 0 100 100 0.85 3000 1000 0.75 0.90 0.65
@@ -406,10 +414,21 @@ join_samples(pn, sn)
 adjust_classifications(pn, 'reads_*.tsv')
 adjust_classifications(pn, 'contigs_*.tsv')
 
-# Change samples extension from tsv to txt
+# Change sample extensions from tsv to txt
 for file in os.listdir(args['pool_name']):
   _, extension = file.split('.')
   if extension.lower() == 'tsv':
     change_extension(
       f'{args["pool_name"]}/{file}', 'txt'
     )
+
+# Move sample for a folder with just folders
+samples_folder: str = f'{args["pool_name"]}/samples'
+if not os.path.isdir(samples_folder):
+  os.mkdir(samples_folder)
+
+move_files(
+  ['contigs_*.txt', 'reads_*.txt', 'mapping_*.txt'],
+  args["pool_name"],
+  samples_folder
+)
